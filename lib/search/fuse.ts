@@ -4,6 +4,7 @@ export interface SnippetSearchIndexItem {
   id: string;
   title: string;
   description?: string | null;
+  content?: string;
   contentPreview: string;
   type: string;
   language?: string | null;

@@ -19,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { getSnippetFullContent } from "@/actions/snippets";
 
 export interface SnippetListItem {
   id: string;
@@ -61,12 +62,24 @@ export function SnippetList({
 }: SnippetListProps) {
   const [copiedId, setCopiedId] = React.useState<string | null>(null);
 
-  const handleCopy = (snippet: SnippetListItem, e: React.MouseEvent) => {
+  const handleCopy = async (snippet: SnippetListItem, e: React.MouseEvent) => {
     e.stopPropagation();
-    navigator.clipboard.writeText(snippet.contentPreview);
-    setCopiedId(snippet.id);
-    toast.success("Copied to clipboard", { description: snippet.title });
-    setTimeout(() => setCopiedId(null), 1500);
+    try {
+      // contentPreview is truncated (250 chars) for display only — always copy the full content
+      let fullContent = snippet.content;
+      if (fullContent === undefined) {
+        const detail = await getSnippetFullContent(snippet.id);
+        if (!detail) throw new Error("Snippet not found");
+        fullContent = detail.content;
+      }
+      await navigator.clipboard.writeText(fullContent);
+      setCopiedId(snippet.id);
+      toast.success("Copied to clipboard", { description: snippet.title });
+      setTimeout(() => setCopiedId(null), 1500);
+    } catch (err) {
+      console.error("Failed to copy snippet:", err);
+      toast.error("Failed to copy snippet");
+    }
   };
 
   const getTypeStyle = (type: string) => {
